@@ -1,0 +1,192 @@
+{
+  "info": {
+    "_postman_id": "5e4e2f67-9a0b-4a44-93f1-7a0b0dfa0001",
+    "name": "Laravel JWT API - AutoToken (Favorites Immutable)",
+    "description": "Colección con manejo automático de TOKEN en variables de colección. No necesitas copiar/pegar el token.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Adjuntar Authorization automáticamente si existe TOKEN en variables de colección",
+          "const token = pm.collectionVariables.get('TOKEN') || pm.globals.get('TOKEN');",
+          "if (token) {",
+          "  pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + token });",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Test global simple de tiempo/respuesta JSON",
+          "pm.test('Content-Type JSON', () => pm.response.headers.get('Content-Type') && pm.response.headers.get('Content-Type').includes('application/json'));",
+          "pm.test('Status code OK-ish', () => [200,201,204,400,401,403,404,405,422,500].includes(pm.response.code));"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication JWT",
+      "item": [
+        {
+          "name": "Login User (JWT)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Guardar TOKEN automáticamente en variables de colección",
+                  "try {",
+                  "  const data = pm.response.json();",
+                  "  if (data && data.token) {",
+                  "    pm.collectionVariables.set('TOKEN', data.token);",
+                  "    pm.test('TOKEN almacenado', () => pm.collectionVariables.get('TOKEN') && pm.collectionVariables.get('TOKEN').length > 10);",
+                  "  }",
+                  "} catch(e) {}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"everlazocastilo@gmail.com\",\n  \"password\": \"password\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/auth/login", "host": ["{{base_url}}"], "path": ["api","auth","login"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh JWT Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "try {",
+                  "  const data = pm.response.json();",
+                  "  if (data && data.token) { pm.collectionVariables.set('TOKEN', data.token); }",
+                  "} catch(e) {}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Accept", "value": "application/json" } ],
+            "url": { "raw": "{{base_url}}/api/auth/refresh", "host": ["{{base_url}}"], "path": ["api","auth","refresh"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Logout (JWT)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Limpiar TOKEN al hacer logout",
+                  "pm.collectionVariables.unset('TOKEN');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Accept", "value": "application/json" } ],
+            "url": { "raw": "{{base_url}}/api/auth/logout", "host": ["{{base_url}}"], "path": ["api","auth","logout"] }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Favorites (Immutable)",
+      "item": [
+        {
+          "name": "Create Favorite (Enrichment)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"external_id\": \"{{favorite_external_id}}\"\n}" },
+            "url": { "raw": "{{base_url}}/api/favorites", "host": ["{{base_url}}"], "path": ["api","favorites"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Show Favorite (by id or external_id)",
+          "request": {
+            "method": "GET",
+            "header": [ { "key": "Accept", "value": "application/json" } ],
+            "url": { "raw": "{{base_url}}/api/favorites/{{favorite_key}}", "host": ["{{base_url}}"], "path": ["api","favorites","{{favorite_key}}"] }
+          },
+          "response": []
+        },
+        {
+          "name": "List Favorites",
+          "request": {
+            "method": "GET",
+            "header": [ { "key": "Accept", "value": "application/json" } ],
+            "url": { "raw": "{{base_url}}/api/favorites", "host": ["{{base_url}}"], "path": ["api","favorites"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Favorite",
+          "request": {
+            "method": "DELETE",
+            "header": [ { "key": "Accept", "value": "application/json" } ],
+            "url": { "raw": "{{base_url}}/api/favorites/{{favorite_id}}", "host": ["{{base_url}}"], "path": ["api","favorites","{{favorite_id}}"] }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "PokeAPI",
+      "item": [
+        {
+          "name": "List Pokemon (limit & offset)",
+          "request": {
+            "method": "GET",
+            "header": [ { "key": "Accept", "value": "application/json" } ],
+            "url": { "raw": "{{base_url}}/api/pokemon?limit=10&offset=0", "host": ["{{base_url}}"], "path": ["api","pokemon"], "query": [ {"key":"limit","value":"10"},{"key":"offset","value":"0"} ] }
+          },
+          "response": []
+        },
+        {
+          "name": "Show Pokemon (by id or name)",
+          "request": {
+            "method": "GET",
+            "header": [ { "key": "Accept", "value": "application/json" } ],
+            "url": { "raw": "{{base_url}}/api/pokemon/{{pokemon_id_or_name}}", "host": ["{{base_url}}"], "path": ["api","pokemon","{{pokemon_id_or_name}}"] }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    { "key": "base_url", "value": "http://127.0.0.1:8000", "type": "string" },
+    { "key": "TOKEN", "value": "", "type": "string" },
+    { "key": "favorite_id", "value": "1", "type": "string" },
+    { "key": "favorite_key", "value": "bulbasaur", "type": "string" },
+    { "key": "favorite_external_id", "value": "1", "type": "string" },
+    { "key": "pokemon_id_or_name", "value": "bulbasaur", "type": "string" }
+  ]
+}
